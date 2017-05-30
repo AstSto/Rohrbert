@@ -22,15 +22,15 @@ void setup()
   //textFont(font);
 
   //bluetooth--------------------------------------------------------------------------------------------
-  // try {                   
+   try {                   
   myPort = new Serial(this, "COM5", 9600); // port used by bluetooth shield
   // A serialEvent() is generated when a newline character is received :
   myPort.bufferUntil('\n');
   connected = true;
-  /*  }  
+    }  
    catch(Throwable e) {
    connected = false;
-   }*/
+   }
 
 
 

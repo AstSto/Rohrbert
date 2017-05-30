@@ -5,6 +5,9 @@ class RobPoint {
   int rad;                  //Radius des Rohrs (variabel mögl)
   boolean loch;
   float lochwinkel;
+  float lochdurchmesser = 0;
+  float vordererwinkel = -1;
+  float hintererwinkel = -1;
 
   RobPoint(PVector robpos, int radius) {
     pos = robpos.copy();

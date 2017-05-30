@@ -60,6 +60,11 @@ void serialEvent (Serial myPort) {
       roll = round((float(data[2]))* PI);
       distance = round((float(data[3]))/360*54*PI);
       hole = float(data[4]);
+      
+      
+      if (stop==false) {
+        roboterposfullen();              // hier werden die Eigentlichen Roboterpunkte in eine ArrayListe umgewandelt
+      }
       // println("distance: "+data[3]);
       //  println("hole: "+data[4]);
     } //try

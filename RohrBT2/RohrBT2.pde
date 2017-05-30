@@ -1,3 +1,7 @@
+import java.util.Queue;
+import java.util.ArrayDeque;
+final Queue<RobPoint> queue = new ArrayDeque(3000);
+
 ArrayList<RobPoint> points = new ArrayList<RobPoint>();
 boolean init = false;
 float ds=0; // delta Strecke des Motor - Encoders
@@ -12,24 +16,26 @@ float x=0;
 float y=0;
 float z=0;
 boolean stop=false;
+float maxvorne = 0;
+float maxhinten = 0;
+RobPoint maxPosvorne, maxPoshinten;
+boolean lochnochoffen = false;
 
 
 void drawRobot () {            // wird regelmäßig automatisch aufgerufen
   lights();
   background(255, 255, 255);
-
-  if (stop==false) {
-    roboterposfullen();              // hier werden die Eigentlichen Roboterpunkte in eine ArrayListe umgewandelt
-  }
   updateCamera();         // Aktualiesiert die Camera Position
-  coordAxis();            // zeichnet den Koordinaten Ursprung
-  raster();      // zeichnet ein Raster ein
+  //coordAxis();            // zeichnet den Koordinaten Ursprung
 
-  pushMatrix();              //speichert derzeitiges Koordinatensystem
-  // translate(500, 2500, 500);        //AUSKOMMENTIEREN BEI ANWENDUNG
-  rohrzeichnen();          // zeichnet das Rohr auf der Grundlage der Arrayliste
-  lochzeichnen();
-  popMatrix();
+  if (points.size() != 0) {
+    raster();      // zeichnet ein Raster ein
+    pushMatrix();              //speichert derzeitiges Koordinatensystem
+    // translate(500, 2500, 500);        //AUSKOMMENTIEREN BEI ANWENDUNG
+    rohrzeichnen();          // zeichnet das Rohr auf der Grundlage der Arrayliste
+    lochzeichnen();
+    popMatrix();
+  }
 
   //println(frameRate);
 }  //drawRobot
@@ -37,8 +43,7 @@ void drawRobot () {            // wird regelmäßig automatisch aufgerufen
 
 void roboterposfullen() {        // hier werden die Eigentlichen Roboterpunkte in eine ArrayListe umgewandelt
 
-
-  if (init==false) {
+  if ((init==false)&&(yaw!=0)) {
     phiinit=yaw;
     init = true;
   }
@@ -56,9 +61,7 @@ void roboterposfullen() {        // hier werden die Eigentlichen Roboterpunkte i
   //******************************************
   //hier werden die Werte der Sensoren gefüllt 
   //******************************************
-  /*ds = 10;
-   phi = 70 *TWO_PI/360;
-   teta = 70*TWO_PI/360;*/
+
 
   // Umrechnung der Kugelkoordinaten in karthesische Koordinaten
   x = ds * cos(teta)*cos(phi);
@@ -67,25 +70,58 @@ void roboterposfullen() {        // hier werden die Eigentlichen Roboterpunkte i
 
   dVec = new PVector(x, y, z);
   pos.add(dVec);
-  points.add(new RobPoint(pos, 100)); 
+  RobPoint activePos = new RobPoint(pos, 100);
+  points.add(activePos); 
+
+
+  //*****************************************************************************************************************************************
+  //Lochdurchmesser wird erstmal nur von dem hinteren bestimmt
+  //*****************************************************************************************************************************************
+  float anzvorne = getDurchvorne();
+  float anzhinten = getDurchvorne();
+
+  if (anzvorne > maxvorne) {
+    maxvorne = anzvorne;
+    activePos.vordererwinkel = getWinkelvorne();
+    activePos.lochdurchmesser = anzvorne;
+    maxPosvorne = activePos;
+    lochnochoffen = true;
+  }
+
+  if ((anzvorne < maxvorne)&&(maxvorne != 0)) {
+    maxvorne = 0;
+    queue.add(maxPosvorne);
+  }
+
+  if (anzhinten > maxhinten) {
+    maxhinten = anzhinten;
+    activePos.hintererwinkel = getWinkelhinten();
+    activePos.lochdurchmesser = anzhinten;
+    maxPoshinten = activePos;
+  }
+  if ((anzhinten < maxhinten)&&(maxhinten != 0)) {
+    maxhinten = 0;
+    RobPoint head ;
+    head = queue.poll();  // Retrieves and removes the head of this queue, or returns null if this queue is empty.
+
+    if (head==null) {
+      maxPoshinten.lochwinkel = maxPoshinten.hintererwinkel ;
+      maxPoshinten.loch = true;
+    } else {
+      head.lochwinkel = (head.vordererwinkel+maxPoshinten.hintererwinkel)/2 ;
+      head.loch = true;
+    }
+  }
+
+  if ((pos.dist(maxPosvorne.pos)>70)&&(lochnochoffen == true)) { //*********************************************+70 als Abstand der Kränze
+    queue.poll();
+    lochnochoffen = false;
+  }
+
 
   dirbestimmen();        // bestimmt zu jedem Rohrmittelpunkt die Richtung in die dieser "schaut"
-
-  // falls Loch gefunden wird: (hier noch zufällig)
-  if (points.size() == 20) {
-    RobPoint point;
-    point =  points.get(points.size()-4);
-    point.loch = true;
-    point.lochwinkel = 40 * TWO_PI / 360;
-  }
-
-  if (points.size() == 40) {
-    RobPoint point;
-    point =  points.get(points.size()-4);
-    point.loch = true;
-    point.lochwinkel = 0 * TWO_PI / 360;
-  }
 }
+
 
 void dirbestimmen() {                        // bestimmt zu jedem Rohrmittelpunkt die Richtung in die dieser "schaut"
   for (int i = 1; i < points.size(); i++) {
@@ -228,7 +264,7 @@ void raster() {
 }
 
 void lochzeichnen() {           // zeichnet alle Löcher
-  for (RobPoint point : points) {      // FOR EACH Schleife
+  for (RobPoint point : points) {      // FOR EACH Schleife, geht alle Elemente von points durch
     if (point.loch) {              // falls ein Loch erkannt wurde
 
 
@@ -252,7 +288,13 @@ void lochzeichnen() {           // zeichnet alle Löcher
       xkreuz = lochv.cross(ykreuz);
       xkreuz.normalize();
 
-      fill(255, 0, 0);
+      fill(255, 0, 0);                        //Farbcode Lochgrösse*****************************************************************nur max anz hinterer Kranz
+      if (point.lochdurchmesser==1) {
+        fill(0, 0, 255);
+      } else if (point.lochdurchmesser == 2) {
+        fill(0, 255, 0);
+      }
+
 
       // zeichnen des Kreuzes 
       pushMatrix();
