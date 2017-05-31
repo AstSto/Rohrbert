@@ -4,7 +4,8 @@ boolean firstContact = false;
 
 float yaw, pitch, roll, distance, hole;
 int [] irSensor = new int [40];
-String[] data = new String[5];
+String[] data = new String[43];
+String[] data2 = new String[4];
 byte msgArduino = 5;
 byte oldMessage = 5;
 
@@ -28,40 +29,35 @@ void serialEvent (Serial myPort) {
 
       //Kontakt hergestellt, SENDET
       println(inString);
-      /* if (msgArduino!=oldMessage) 
-       {                          
-       if (msgArduino==1) {
-       myPort.write('1');
-       }
-       if (msgArduino==2) {
-       myPort.write('2');
-       }
-       if (msgArduino==3) {
-       myPort.write('3');
-       }
-       if (msgArduino==4) {
-       myPort.write('4');
-       }
-       if (msgArduino==5) {
-       myPort.write('5');
-       }
-       oldMessage=msgArduino;
-       }*/
     }
 
     // LIEST Daten ein
     try {
-      String[] data = splitTokens(inString, "q");
-      // println("YAW: "+data[0]);
-      yaw = round((float(data[0]))* PI);
-      //  println("ROLL: "+data[1]);
-      //  println("PITCH: "+data[2]);
-      pitch = round((float(data[1]))* PI);
-      roll = round((float(data[2]))* PI);
-      distance = round((float(data[3]))/360*54*PI);
-      hole = float(data[4]);
-      
-      
+
+      if (msgArduino==3) {
+        String[] data = splitTokens(inString, "q");
+        // println("YAW: "+data[0]);
+        yaw = round((float(data[0]))* PI);
+        //  println("ROLL: "+data[1]);
+        //  println("PITCH: "+data[2]);
+        pitch = round((float(data[1]))* PI);
+        roll = round((float(data[2]))* PI);
+        distance = round((float(data[3]))/360*56*PI);
+        for (int i=4; i<44; i++) {
+          irSensor[i-4] = round((int(data[i])));
+        }
+      } else {
+        String[] data2 = splitTokens(inString, "q");
+        // println("YAW: "+data[0]);
+        yaw = round((float(data2[0]))* PI);
+        //  println("ROLL: "+data[1]);
+        //  println("PITCH: "+data[2]);
+        pitch = round((float(data2[1]))* PI);
+        roll = round((float(data2[2]))* PI);
+        distance = round((float(data2[3]))/360*56*PI);
+      }
+
+
       if (stop==false) {
         roboterposfullen();              // hier werden die Eigentlichen Roboterpunkte in eine ArrayListe umgewandelt
       }

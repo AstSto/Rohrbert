@@ -52,7 +52,6 @@ void roboterposfullen() {        // hier werden die Eigentlichen Roboterpunkte i
   println("roll: "+roll);
   println("yaw: "+yaw);
 
-  println("xxxxxxxxxxxxxxxxInitxxxxxxxxxx" +phiinit);
   teta=roll;
   phi=yaw-phiinit;
   ds=distance;
